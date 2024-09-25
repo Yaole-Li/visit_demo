@@ -3,7 +3,7 @@
 #include <string>
 
 int main() {
-    std::string url = "http://www.baidu.com"; // 访问的网页链接
+    std::string url = "https://www.bing.com"; // 访问的网页链接
     WebFetcher fetcher; // 创建 WebFetcher 实例
     std::string webData = fetcher.fetchData(url); // 获取网页数据
 
@@ -26,6 +26,8 @@ int main() {
         // 发送数据包
         packet.sendPackets(packetIndex); // 发送一次数据包
         packet.printPacketInfo();
+        // std::cout << "要插入的扩展头字段：" << extField << std::endl;
+        // std::cout << "要插入的负载字段：" << chunkData << std::endl;
 
         offset += chunkSize; // 移动到下一个数据段
         packetIndex++; // 增加包序号

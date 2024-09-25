@@ -19,6 +19,9 @@ std::string WebFetcher::fetchData(const std::string& url) {
         curl_easy_setopt(curl, CURLOPT_URL, url.c_str()); // 设置URL
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback); // 设置写入回调函数
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer); // 设置写入数据的目标
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L); // 关闭SSL证书验证
+        curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L); // 跟随重定向
+        curl_easy_setopt(curl, CURLOPT_USERAGENT, "libcurl-agent/1.0"); // 设置用户代理
 
         // 执行请求
         CURLcode res = curl_easy_perform(curl);
@@ -31,6 +34,8 @@ std::string WebFetcher::fetchData(const std::string& url) {
 
     return readBuffer; // 返回获取的网页数据
 }
+
+
 
 // 数据写入回调函数
 size_t WebFetcher::WriteCallback(void* contents, size_t size, size_t nmemb, std::string* userp) {

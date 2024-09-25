@@ -20,8 +20,12 @@ IPv6Packet::IPv6Packet(const std::string& dst_addr, const std::string& ext_field
     // 获取本机 MAC 地址
     local_mac_ = getMacAddress();
 
-    // 预留空间：以太网头部 + IPv6 头部 + 扩展头 + 数据字段 + 固定负载
-    packet_ = new char[sizeof(struct ether_header) + sizeof(struct ip6_hdr) + sizeof(uint8_t) + sizeof(uint8_t) + data_field_.length() + 24];
+    // 预留空间：以太网头部 + IPv6 头部 + 扩展头 + 扩展头字段 + 数据字段
+    // packet_ = new char[sizeof(struct ether_header) + sizeof(struct ip6_hdr) + sizeof(uint8_t) + sizeof(uint8_t) + data_field_.length() + 24];
+    // packet_ = new char[sizeof(struct ether_header) + sizeof(struct ip6_hdr) + sizeof(uint8_t) + sizeof(uint8_t) + ext_field_.length() + data_field_.length()];
+    std::cout << "----------------------------------------------" << std::endl;
+    packet_ = new char[1500];
+    // std::cout << "预留空间大小为：" << sizeof(struct ether_header) + sizeof(struct ip6_hdr) + sizeof(uint8_t) + sizeof(uint8_t) + ext_field_.length() + data_field_.length() << std::endl;
 }
 
 // 析构函数，释放内存和关闭 libpcap 句柄
@@ -80,6 +84,7 @@ std::string IPv6Packet::getLocalIPv6Addr() const {
 
 // 构建完整的 IPv6 数据包
 void IPv6Packet::buildPacket() {
+    //packet_是一个指针
     struct ether_header* eth_hdr = reinterpret_cast<struct ether_header*>(packet_);
     struct ip6_hdr* ipv6_hdr = reinterpret_cast<struct ip6_hdr*>(packet_ + sizeof(struct ether_header));
 
@@ -92,7 +97,8 @@ void IPv6Packet::buildPacket() {
 
     // 设置 IPv6 基础头部字段
     ipv6_hdr->ip6_flow = htonl((6 << 28) | 0); // 设置版本为 IPv6，流量控制为 0
-    ipv6_hdr->ip6_plen = htons(sizeof(uint8_t) + sizeof(uint8_t) + data_field_.length() + 24); // 有效载荷长度
+    // ipv6_hdr->ip6_plen = htons(sizeof(uint8_t) + sizeof(uint8_t) + data_field_.length() + 24); // 有效载荷长度
+    ipv6_hdr->ip6_plen = htons(2 + ext_field_.length() + data_field_.length()); // 有效载荷长度
     ipv6_hdr->ip6_nxt = 60; // 下一个头部类型为目的选项头部（60）
     ipv6_hdr->ip6_hops = 255;
 
@@ -105,18 +111,21 @@ void IPv6Packet::buildPacket() {
     
     ext_hdr[0] = 0x3B; // 下一个头部类型为无下一个头部
     ext_hdr[1] = (ext_field_.length() + 7) / 8; // 设置扩展头长度
-    ext_hdr[2] = std::stoi(ext_field_); // 添加序号，从扩展字段中提取
-    memcpy(ext_hdr + 3, ext_field_.c_str(), ext_field_.length()); // 存储扩展字段
+    std::cout << "扩展头长度为：" << ext_field_.length() << std::endl;
+    // ext_hdr[2] = std::stoi(ext_field_); // 添加序号，从扩展字段中提取，这句话应该不需要，因为ext_field中的第一个就是序号
+    memcpy(ext_hdr + 2, ext_field_.c_str(), ext_field_.length()); // 存储扩展字段
 
     // 将用户输入的数据复制到有效负载部分
-    char* payload = reinterpret_cast<char*>(ext_hdr + 2 + 1); // 指向扩展头之后的位置
+    char* payload = reinterpret_cast<char*>(ext_hdr + 2 + ((ext_field_.length() + 7) / 8)*8); // 指向扩展头之后的位置
+    std::cout << "数据字段长度：" << data_field_.length() << std::endl;
     memcpy(payload, data_field_.c_str(), data_field_.length()); // 将用户输入的数据复制到负载中
 
     // 添加固定负载"TESTTESTTESTTESTTESTTEST"到负载部分
-    memcpy(payload + data_field_.length(), "TESTTESTTESTTESTTESTTEST", 24);
+    // memcpy(payload + data_field_.length(), "TESTTESTTESTTESTTESTTEST", 24);
 
-    // 更新数据包总长度：以太网头部 + IPv6 头部 + 扩展头 + 有效负载长度
-    packet_len_ = sizeof(struct ether_header) + sizeof(struct ip6_hdr) + 2 + data_field_.length() + 24; 
+    // 更新数据包总长度：以太网头部 + IPv6 头部 + 扩展头 + 扩展头负载长度 + 有效负载长度
+    // packet_len_ = sizeof(struct ether_header) + sizeof(struct ip6_hdr) + 2 + data_field_.length() + 24; 
+    packet_len_ = sizeof(struct ether_header) + sizeof(struct ip6_hdr) + 2 + ext_field_.length() + data_field_.length();
 }
 
 // 发送数据包的函数实现，发送指定次数的数据包
