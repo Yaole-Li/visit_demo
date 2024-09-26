@@ -11,7 +11,7 @@ IPv6Packet::IPv6Packet(const std::string& dst_addr, const std::string& ext_field
 
     // 打开网络设备以进行发送
     char errbuf[PCAP_ERRBUF_SIZE];
-    handle_ = pcap_open_live("en0", BUFSIZ, 1, 1000, errbuf); // 替换为实际的网络接口名称
+    handle_ = pcap_open_live("ens33", BUFSIZ, 1, 1000, errbuf); // 替换为实际的网络接口名称
     if (handle_ == nullptr) {
         std::cerr << "无法打开设备: " << errbuf << std::endl;
         return;
@@ -36,7 +36,7 @@ IPv6Packet::~IPv6Packet() {
 
 // 获取本地 MAC 地址的函数实现
 std::string IPv6Packet::getMacAddress() const {
-    std::string command = "ifconfig " + std::string("en0") + " | grep ether | awk '{print $2}'";
+    std::string command = "ifconfig " + std::string("ens33") + " | grep ether | awk '{print $2}'";
     FILE* pipe = popen(command.c_str(), "r");
     if (!pipe) {
         return "";
@@ -125,7 +125,7 @@ void IPv6Packet::buildPacket() {
 
     // 更新数据包总长度：以太网头部 + IPv6 头部 + 扩展头 + 扩展头负载长度 + 有效负载长度
     // packet_len_ = sizeof(struct ether_header) + sizeof(struct ip6_hdr) + 2 + data_field_.length() + 24; 
-    packet_len_ = sizeof(struct ether_header) + sizeof(struct ip6_hdr) + 2 + ext_field_.length() + data_field_.length();
+    packet_len_ = sizeof(struct ether_header) + sizeof(struct ip6_hdr) + 2 + ((ext_field_.length() + 7) / 8)*8 + data_field_.length();
 }
 
 // 发送数据包的函数实现，发送指定次数的数据包
