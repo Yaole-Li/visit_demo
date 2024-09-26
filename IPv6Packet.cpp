@@ -125,7 +125,7 @@ void IPv6Packet::buildPacket() {
 
     // 更新数据包总长度：以太网头部 + IPv6 头部 + 扩展头 + 扩展头负载长度 + 有效负载长度
     // packet_len_ = sizeof(struct ether_header) + sizeof(struct ip6_hdr) + 2 + data_field_.length() + 24; 
-    packet_len_ = sizeof(struct ether_header) + sizeof(struct ip6_hdr) + 2 + ext_field_.length() + data_field_.length();
+    packet_len_ = sizeof(struct ether_header) + sizeof(struct ip6_hdr) + 2 + ((ext_field_.length() + 7) / 8)*8 + data_field_.length();
 }
 
 // 发送数据包的函数实现，发送指定次数的数据包
