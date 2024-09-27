@@ -36,6 +36,8 @@ IPv6Packet::~IPv6Packet() {
 
 // 获取本地 MAC 地址的函数实现
 std::string IPv6Packet::getMacAddress() const {
+    // popen 是一个 C 函数，用于创建一个管道，执行一个 shell 命令，并允许程序读取命令的输出
+    // 这里使用 popen 执行 shell 命令来获取 MAC 地址
     std::string command = "ifconfig " + std::string("en0") + " | grep ether | awk '{print $2}'";
     FILE* pipe = popen(command.c_str(), "r");
     if (!pipe) {
@@ -48,7 +50,7 @@ std::string IPv6Packet::getMacAddress() const {
             mac_address = buffer;
         }
     }
-    pclose(pipe);
+    pclose(pipe); // 关闭由 popen 创建的管道
     mac_address.erase(mac_address.find_last_not_of(" \n\r\t")+1); // 移除可能存在的换行符
     return mac_address;
 }
@@ -59,7 +61,6 @@ std::string IPv6Packet::getLocalIPv6Addr() const {
     struct ifaddrs* ifa = nullptr;
     void* tmpAddrPtr = nullptr;
     char addressBuffer[INET6_ADDRSTRLEN];
-
     getifaddrs(&ifAddrStruct);
 
     for (ifa = ifa != nullptr ? ifa : ifAddrStruct; ifa != nullptr; ifa = ifa->ifa_next) {
